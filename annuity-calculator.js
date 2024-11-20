@@ -13,132 +13,57 @@ function formatCurrency(value) {
     }).format(value);
 }
 
-function formatCurrencyInput(input) {
-    let value = input.value.replace(/[^\d]/g, '');
+function cleanNumber(value) {
+    if (!value) return 0;
+    return parseInt(value.replace(/[^\d]/g, '')) || 0;
+}
+
+// Input Handlers
+function handleCurrencyInput(input) {
+    const value = cleanNumber(input.value);
     if (value) {
-        const number = parseInt(value);
-        input.value = formatCurrency(number);
-        validateForm();
+        input.value = formatCurrency(value);
+        checkFormValidity();
     }
 }
 
-function parseCurrencyValue(value) {
-    if (!value) return 0;
-    return parseInt(value.replace(/[$,]/g, '')) || 0;
+function handleDateInput(input) {
+    checkFormValidity();
 }
 
-// Setup Functions
-function setupDateConstraints() {
-    const today = new Date();
-    
-    // Start date constraints (30 days to 12 months from today)
-    const minStart = new Date(today);
-    minStart.setDate(today.getDate() + 30);
-    
-    const maxStart = new Date(today);
-    maxStart.setMonth(today.getMonth() + 12);
-    
-    const startDateInput = document.getElementById('startDate');
-    startDateInput.min = minStart.toISOString().split('T')[0];
-    startDateInput.max = maxStart.toISOString().split('T')[0];
-    startDateInput.value = minStart.toISOString().split('T')[0];
-    
-    // Birth date constraints (18-90 years old)
-    const minBirth = new Date(today);
-    minBirth.setFullYear(today.getFullYear() - 90);
-    
-    const maxBirth = new Date(today);
-    maxBirth.setFullYear(today.getFullYear() - 18);
-    
-    const birthDateInput = document.getElementById('birthDate');
-    birthDateInput.min = minBirth.toISOString().split('T')[0];
-    birthDateInput.max = maxBirth.toISOString().split('T')[0];
+function handleStateChange(select) {
+    checkFormValidity();
 }
 
-function setupEventListeners() {
-    // Income type radio buttons
-    document.querySelectorAll('input[name="incomeType"]').forEach(radio => {
-        radio.addEventListener('change', function() {
-            const periodWrapper = document.getElementById('periodInputWrapper');
-            periodWrapper.style.display = this.value === 'period' ? 'block' : 'none';
-            validateForm();
-        });
-    });
-    
-    // Estimate type radio buttons
-    document.querySelectorAll('input[name="estimateType"]').forEach(radio => {
-        radio.addEventListener('change', toggleEstimateType);
-    });
-    
-    // Input fields
-    document.getElementById('startDate').addEventListener('change', function() {
-        validateStartDate(this);
-    });
-    
-    document.getElementById('birthDate').addEventListener('change', function() {
-        validateBirthDate(this);
-    });
-    
-    document.getElementById('state').addEventListener('change', validateForm);
-    
-    // Calculate button
-    document.getElementById('calculateButton').addEventListener('click', calculateAnnuity);
+// Validation
+function isAmountValid(value) {
+    const amount = cleanNumber(value);
+    return amount >= 5000 && amount <= 5000000;
 }
 
-// Validation Functions
-function validateAmount(input) {
-    const value = parseCurrencyValue(input.value);
-    const errorElement = document.getElementById('amountError');
-    const isValid = value >= 5000 && value <= 5000000;
-    
-    input.classList.toggle('error', !isValid);
-    errorElement.classList.toggle('visible', !isValid);
-    
-    return isValid;
+function isIncomeValid(value) {
+    const income = cleanNumber(value);
+    return income >= 50 && income <= 50000;
 }
 
-function validateIncome(input) {
-    const value = parseCurrencyValue(input.value);
-    const errorElement = document.getElementById('incomeError');
-    const isValid = value >= 50 && value <= 50000;
-    
-    input.classList.toggle('error', !isValid);
-    errorElement.classList.toggle('visible', !isValid);
-    
-    return isValid;
-}
-
-function validateStartDate(input) {
-    const selectedDate = new Date(input.value);
+function isDateValid(dateString) {
+    if (!dateString) return false;
+    const inputDate = new Date(dateString);
     const today = new Date();
     const minDate = new Date(today.setDate(today.getDate() + 30));
     const maxDate = new Date(today.setMonth(today.getMonth() + 12));
-    
-    const isValid = selectedDate >= minDate && selectedDate <= maxDate;
-    const errorElement = document.getElementById('dateError');
-    
-    input.classList.toggle('error', !isValid);
-    errorElement.classList.toggle('visible', !isValid);
-    
-    validateForm();
-    return isValid;
+    return inputDate >= minDate && inputDate <= maxDate;
 }
 
-function validateBirthDate(input) {
-    const birthDate = new Date(input.value);
+function isBirthDateValid(dateString) {
+    if (!dateString) return false;
+    const birthDate = new Date(dateString);
     const today = new Date();
     const age = today.getFullYear() - birthDate.getFullYear();
-    const isValid = age >= 18 && age <= 90;
-    
-    const errorElement = document.getElementById('birthDateError');
-    input.classList.toggle('error', !isValid);
-    errorElement.classList.toggle('visible', !isValid);
-    
-    validateForm();
-    return isValid;
+    return age >= 18 && age <= 90;
 }
 
-function validateForm() {
+function checkFormValidity() {
     const estimateType = document.querySelector('input[name="estimateType"]:checked').value;
     const startDate = document.getElementById('startDate').value;
     const birthDate = document.getElementById('birthDate').value;
@@ -146,22 +71,33 @@ function validateForm() {
     
     let isValid = true;
     
-    // Only validate the active input
+    // Check amount or income based on estimate type
     if (estimateType === 'amount') {
         const amountInput = document.getElementById('investmentAmount');
-        isValid = amountInput.disabled ? true : validateAmount(amountInput);
+        isValid = isAmountValid(amountInput.value);
+        amountInput.classList.toggle('error', !isValid);
+        document.getElementById('amountError').classList.toggle('visible', !isValid);
     } else {
         const incomeInput = document.getElementById('desiredIncome');
-        isValid = incomeInput.disabled ? true : validateIncome(incomeInput);
+        isValid = isIncomeValid(incomeInput.value);
+        incomeInput.classList.toggle('error', !isValid);
+        document.getElementById('incomeError').classList.toggle('visible', !isValid);
     }
     
-    isValid = isValid && 
-              startDate !== '' &&
-              birthDate !== '' &&
-              state !== '';
+    // Check dates and state
+    const isStartDateValid = isDateValid(startDate);
+    const isBirthValid = isBirthDateValid(birthDate);
     
+    document.getElementById('startDate').classList.toggle('error', !isStartDateValid);
+    document.getElementById('dateError').classList.toggle('visible', !isStartDateValid);
+    
+    document.getElementById('birthDate').classList.toggle('error', !isBirthValid);
+    document.getElementById('birthDateError').classList.toggle('visible', !isBirthValid);
+    
+    isValid = isValid && isStartDateValid && isBirthValid && state !== '';
+    
+    // Enable/disable calculate button
     document.getElementById('calculateButton').disabled = !isValid;
-    return isValid;
 }
 
 function toggleEstimateType() {
@@ -182,7 +118,66 @@ function toggleEstimateType() {
         amountInput.classList.remove('error');
         document.getElementById('amountError').classList.remove('visible');
     }
-    validateForm();
+    
+    checkFormValidity();
+}
+
+// Setup Functions
+function setupDateConstraints() {
+    const today = new Date();
+    
+    // Start date constraints
+    const minStart = new Date(today);
+    minStart.setDate(today.getDate() + 30);
+    
+    const maxStart = new Date(today);
+    maxStart.setMonth(today.getMonth() + 12);
+    
+    const startDateInput = document.getElementById('startDate');
+    startDateInput.min = minStart.toISOString().split('T')[0];
+    startDateInput.max = maxStart.toISOString().split('T')[0];
+    
+    // Birth date constraints
+    const minBirth = new Date(today);
+    minBirth.setFullYear(today.getFullYear() - 90);
+    
+    const maxBirth = new Date(today);
+    maxBirth.setFullYear(today.getFullYear() - 18);
+    
+    const birthDateInput = document.getElementById('birthDate');
+    birthDateInput.min = minBirth.toISOString().split('T')[0];
+    birthDateInput.max = maxBirth.toISOString().split('T')[0];
+}
+
+function setupEventListeners() {
+    // Radio buttons
+    document.querySelectorAll('input[name="incomeType"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            document.getElementById('periodInputWrapper').style.display = 
+                this.value === 'period' ? 'block' : 'none';
+            checkFormValidity();
+        });
+    });
+    
+    // Input fields
+    document.getElementById('investmentAmount').addEventListener('input', 
+        e => handleCurrencyInput(e.target));
+    document.getElementById('desiredIncome').addEventListener('input', 
+        e => handleCurrencyInput(e.target));
+    document.getElementById('startDate').addEventListener('change', 
+        e => handleDateInput(e.target));
+    document.getElementById('birthDate').addEventListener('change', 
+        e => handleDateInput(e.target));
+    document.getElementById('state').addEventListener('change', 
+        e => handleStateChange(e.target));
+        
+    // Estimate type radios
+    document.querySelectorAll('input[name="estimateType"]').forEach(radio => {
+        radio.addEventListener('change', toggleEstimateType);
+    });
+    
+    // Calculate button
+    document.getElementById('calculateButton').addEventListener('click', calculateAnnuity);
 }
 
 function calculateAnnuity() {
@@ -192,10 +187,10 @@ function calculateAnnuity() {
     let monthlyIncome, investmentAmount;
     
     if (estimateType === 'amount') {
-        investmentAmount = parseCurrencyValue(document.getElementById('investmentAmount').value);
+        investmentAmount = cleanNumber(document.getElementById('investmentAmount').value);
         monthlyIncome = (investmentAmount * (annualRate / 12));
     } else {
-        monthlyIncome = parseCurrencyValue(document.getElementById('desiredIncome').value);
+        monthlyIncome = cleanNumber(document.getElementById('desiredIncome').value);
         investmentAmount = (monthlyIncome * 12 / annualRate);
     }
     
