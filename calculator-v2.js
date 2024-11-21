@@ -74,6 +74,33 @@ function setupListeners() {
     document.getElementById('calculateButton').addEventListener('click', calculate);
 }
 
+// Format Functions
+function formatInput(input) {
+    const clean = input.value.replace(/[^\d]/g, '');
+    if (clean) {
+        const number = parseInt(clean);
+        input.value = formatCurrency(number);
+    }
+}
+
+function formatCurrency(number) {
+    return '$' + number.toLocaleString('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    });
+}
+
+// Utility Functions
+function getCleanNumber(elementId) {
+    const value = document.getElementById(elementId).value;
+    return parseInt(value.replace(/[^\d]/g, '')) || 0;
+}
+
+function toggleError(inputId, errorId, show) {
+    document.getElementById(inputId).classList.toggle('error', show);
+    document.getElementById(errorId).classList.toggle('visible', show);
+}
+
 // Validation Functions
 function checkFormValidity() {
     const estimateType = document.querySelector('input[name="estimateType"]:checked').value;
@@ -123,30 +150,6 @@ function validateBirthDate(dateStr) {
     return age >= 18 && age <= 90;
 }
 
-// Utility Functions
-function formatInput(input) {
-    const clean = input.value.replace(/[^\d]/g, '');
-    if (clean) {
-        const number = parseInt(clean);
-        input.value = new Intl.NumberFormat('es-MX', {
-            style: 'currency',
-            currency: 'USD',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0
-        }).format(number);
-    }
-}
-
-function getCleanNumber(elementId) {
-    const value = document.getElementById(elementId).value;
-    return parseInt(value.replace(/[^\d]/g, '')) || 0;
-}
-
-function toggleError(inputId, errorId, show) {
-    document.getElementById(inputId).classList.toggle('error', show);
-    document.getElementById(errorId).classList.toggle('visible', show);
-}
-
 function handleEstimateTypeChange() {
     const isAmount = this.value === 'amount';
     const amountInput = document.getElementById('investmentAmount');
@@ -185,29 +188,22 @@ function calculate() {
 }
 
 function displayResults(investment, monthly) {
-    const formatter = new Intl.NumberFormat('es-MX', {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-    });
-
     document.getElementById('resultsSection').classList.remove('hidden');
     document.getElementById('startDateDisplay').textContent = 
         new Date(document.getElementById('startDate').value)
-            .toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
+            .toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
     document.getElementById('annuityTypeDisplay').textContent = getAnnuityType();
-    document.getElementById('investmentDisplay').textContent = formatter.format(investment);
-    document.getElementById('monthlyIncomeDisplay').textContent = formatter.format(monthly);
-    document.getElementById('currentDate').textContent = new Date().toLocaleDateString('es-MX');
+    document.getElementById('investmentDisplay').textContent = formatCurrency(investment);
+    document.getElementById('monthlyIncomeDisplay').textContent = formatCurrency(monthly);
+    document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-US');
 }
 
 function getAnnuityType() {
     const type = document.querySelector('input[name="incomeType"]:checked').value;
     switch(type) {
-        case 'single': return 'Vida única';
-        case 'joint': return 'Vida conjunta';
-        case 'period': return `${document.getElementById('periodYears').value} años`;
+        case 'single': return 'Single Life';
+        case 'joint': return 'Joint Life';
+        case 'period': return `${document.getElementById('periodYears').value} Years`;
         default: return '-';
     }
 }
