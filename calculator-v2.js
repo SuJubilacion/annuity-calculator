@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializeCalculator() {
     setupDates();
     setupListeners();
-    checkFormValidity();
+    ();
 }
 
 function setupDates() {
@@ -44,7 +44,7 @@ function setupListeners() {
     if (amountInput) {
         amountInput.addEventListener('input', function(e) {
             formatInput(this);
-            checkFormValidity();
+            ();
         });
     }
 
@@ -53,25 +53,25 @@ function setupListeners() {
     if (incomeInput) {
         incomeInput.addEventListener('input', function(e) {
             formatInput(this);
-            checkFormValidity();
+            ();
         });
     }
 
     // Date inputs
     const startDate = document.getElementById('startDate');
     if (startDate) {
-        startDate.addEventListener('change', checkFormValidity);
+        startDate.addEventListener('change', );
     }
 
     const birthDate = document.getElementById('birthDate');
     if (birthDate) {
-        birthDate.addEventListener('change', checkFormValidity);
+        birthDate.addEventListener('change', );
     }
     
     // State select
     const stateSelect = document.getElementById('state');
     if (stateSelect) {
-        stateSelect.addEventListener('change', checkFormValidity);
+        stateSelect.addEventListener('change', );
     }
     
     // Radio buttons
@@ -85,7 +85,7 @@ function setupListeners() {
             if (wrapper) {
                 wrapper.style.display = this.value === 'period' ? 'block' : 'none';
             }
-            checkFormValidity();
+            ();
         });
     });
 
